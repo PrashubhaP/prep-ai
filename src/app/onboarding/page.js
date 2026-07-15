@@ -1,8 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import connectDB from "@/lib/mongodb";
-import User from "@/models/User";
-import OnboardingForm from "./OnboardingForm";
+
+import { findUserByClerkId } from "@/server/services/user.service";
+import { OnboardingForm } from "@/features/onboarding/OnboardingForm";
 
 export default async function OnboardingPage() {
   const { userId } = await auth();
@@ -11,9 +11,7 @@ export default async function OnboardingPage() {
     redirect("/");
   }
 
-  await connectDB();
-
-  const user = await User.findOne({ clerkId: userId });
+  const user = await findUserByClerkId(userId);
 
   if (user?.profileCompleted) {
     redirect("/dashboard");
