@@ -66,32 +66,35 @@ export default function DashboardClient({
             <div className="mt-12 flex justify-center">
                 <button
                     onClick={async () => {
-                        const res = await fetch("/api/interview/create", {
+                        const res = await fetch("/api/interview/start", {
                             method: "POST",
                         });
 
                         const data = await res.json();
 
-                        console.log(data);
-
                         if (data.success) {
-                            window.location.href = `/interview/${data.interviewId}`;
+                            localStorage.setItem(
+                                "currentInterview",
+                                JSON.stringify(data)
+                            );
+
+                            window.location.href = "/interview";
                         } else {
-                            alert(data.error);
+                            alert(data.message);
                         }
                     }}
                     className="
-    inline-flex items-center gap-3
-    bg-gradient-to-r from-emerald-500 to-green-600
-    text-white
-    px-12 py-5
-    rounded-2xl
-    shadow-xl
-    hover:shadow-emerald-400/40
-    hover:scale-105
-    transition-all duration-300
-    text-2xl font-extrabold tracking-wide
-  "
+            inline-flex items-center gap-3
+            bg-gradient-to-r from-emerald-500 to-green-600
+            text-white
+            px-12 py-5
+            rounded-2xl
+            shadow-xl
+            hover:shadow-emerald-400/40
+            hover:scale-105
+            transition-all duration-300
+            text-2xl font-extrabold tracking-wide
+        "
                     style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
                     🚀 Start Mock Interview

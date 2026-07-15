@@ -2,13 +2,32 @@ import mongoose from "mongoose";
 
 const ResumeSchema = new mongoose.Schema(
     {
-        userId: { type: String, required: true },
-        fileName: { type: String, required: true },
+        userId: {
+            type: String,
+            required: true,
+        },
+        fileName: {
+            type: String,
+            required: true,
+        },
         extractedSkills: [String],
         projects: [String],
         technologies: [String],
         role: String,
         experienceLevel: String,
+
+        questionBank: [
+            {
+                id: Number,
+                questionText: String,
+                category: String,
+                used: {
+                    type: Boolean,
+                    default: false,
+                },
+            },
+        ],
+
         uploadedAt: {
             type: Date,
             default: Date.now,
@@ -18,4 +37,3 @@ const ResumeSchema = new mongoose.Schema(
 );
 
 export default mongoose.models.Resume || mongoose.model("Resume", ResumeSchema);
-

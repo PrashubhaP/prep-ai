@@ -5,116 +5,91 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
+// -------------------------
+// Extract PDF Text
+// -------------------------
 export async function extractTextFromPDF(buffer) {
   const uint8Array = new Uint8Array(buffer);
+
   const pdf = await getDocumentProxy(uint8Array);
-  const { text } = await extractText(pdf, { mergePages: true });
+
+  const { text } = await extractText(pdf, {
+    mergePages: true,
+  });
+
   return text;
 }
 
-// --------------------
-// Resume Analysis
-// --------------------
-export async function generateInterviewQuestions({
-  resume,
-  previousQuestions = [],
-}) {
+// -------------------------
+// Analyze Resume + Generate Questions
+// -------------------------
+export async function analyzeResumeAndGenerateQuestions(
+  resumeText,
+  role,
+  experienceLevel
+) {
   const prompt = `
-You are an experienced technical interviewer.
+You are an expert technical interviewer.
 
-Your task is to conduct a personalized mock interview.
+First analyze the resume.
 
-==============================
-Candidate Profile
-==============================
+Extract:
 
-Role:
-${resume.role}
+- skills
+- technologies
+- projects
 
-Experience Level:
-${resume.experienceLevel}
+Then generate EXACTLY 50 UNIQUE interview questions.
 
-Skills:
-${resume.extractedSkills?.join(", ") || "None"}
+The questions MUST be based on:
 
-Technologies:
-${resume.technologies?.join(", ") || "None"}
+- extracted skills
+- extracted technologies
+- extracted projects
+- Role: ${role}
+- Experience Level: ${experienceLevel}
 
-Projects:
-${resume.projects?.join("\n") || "None"}
+Rules:
 
-==============================
-Previously Asked Questions
-==============================
+- Make every question personalized.
+- Do NOT repeat questions.
+- Mix technical, behavioral, project and scenario questions.
+- Questions should become gradually harder.
+- Return ONLY valid JSON.
 
-${
-previousQuestions.length
-? previousQuestions.map((q,i)=>`${i+1}. ${q}`).join("\n")
-: "None"
-}
-
-==============================
-Instructions
-==============================
-
-Generate EXACTLY FIVE interview questions.
-
-Requirements:
-
-• Questions MUST match the selected role.
-
-• Questions MUST match the experience level.
-
-• Questions MUST primarily be based on the candidate's resume.
-
-• Ask about technologies the candidate actually used.
-
-• Ask about projects mentioned in the resume.
-
-• Ask about implementation decisions.
-
-• Ask about challenges faced.
-
-• Ask one scenario-based question.
-
-• Ask one behavioral question.
-
-• Do NOT ask generic interview questions.
-
-• Do NOT repeat any previous question.
-
-Return ONLY JSON.
+Format:
 
 {
-  "questions":[
+  "skills": [],
+  "technologies": [],
+  "projects": [],
+  "questions": [
     {
-      "questionText":"...",
-      "category":"technical"
+      "questionText": "...",
+      "category": "technical"
     }
   ]
 }
+
+Resume:
+
+${resumeText}
 `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-      },
-    });
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+    },
+  });
 
-    let text = response.text.trim();
+  let text = response.text;
 
-    text = text
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
+  text = text
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .trim();
 
-    return JSON.parse(text);
-
-  } catch (error) {
-    console.error(error);
-    throw new Error("Failed to generate interview questions.");
-  }
+  return JSON.parse(text);
 }
