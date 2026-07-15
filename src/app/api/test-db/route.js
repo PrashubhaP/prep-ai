@@ -1,4 +1,4 @@
-import connectDB from "@/lib/mongodb";
+import connectDB from "@/server/db";
 
 export async function GET() {
   try {

@@ -1,10 +1,9 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
-import connectDB from "@/lib/mongodb";
-import User from "@/models/User";
+
+import { getOrCreateUser } from "@/server/services/user.service";
 
 export async function POST() {
   try {
-    // Get logged-in user
     const { userId } = await auth();
 
     if (!userId) {
@@ -14,37 +13,13 @@ export async function POST() {
       );
     }
 
-    // Get user details from Clerk
     const clerkUser = await currentUser();
+    const user = await getOrCreateUser(userId, clerkUser);
 
-    // Connect to MongoDB
-    await connectDB();
-
-    // Check if user already exists
-    let user = await User.findOne({ clerkId: userId });
-
-    // Create new user if not found
-    if (!user) {
-      user = await User.create({
-        clerkId: userId,
-        firstName: clerkUser.firstName || "",
-        lastName: clerkUser.lastName || "",
-        email: clerkUser.emailAddresses[0].emailAddress,
-        imageUrl: clerkUser.imageUrl || "",
-      });
-    }
-
-    return Response.json({
-      success: true,
-      user,
-    });
-
+    return Response.json({ success: true, user });
   } catch (error) {
     return Response.json(
-      {
-        success: false,
-        message: error.message,
-      },
+      { success: false, message: error.message },
       { status: 500 }
     );
   }
