@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.18",
+    "@clerk/themes": "^2.4.57",
     "mongoose": "^9.7.4",
     "multer": "^2.2.0",
     "next": "16.2.10",
