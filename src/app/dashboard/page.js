@@ -30,14 +30,16 @@ export default async function DashboardPage() {
     if (!user) {
 
         user = await User.create({
-
             clerkId: userId,
-            firstName: clerkUser.firstName || "",
+            firstName:
+                clerkUser.firstName ||
+                clerkUser.username ||
+                clerkUser.emailAddresses[0]?.emailAddress?.split("@")[0] ||
+                "User",
             lastName: clerkUser.lastName || "",
             email: clerkUser.emailAddresses[0].emailAddress,
             imageUrl: clerkUser.imageUrl || "",
             profileCompleted: false,
-
         });
 
     }

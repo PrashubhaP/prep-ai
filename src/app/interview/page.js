@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { questions } from "@/data/questions";
 import { useRouter } from "next/navigation";
 
 export default function InterviewPage() {
@@ -9,7 +8,9 @@ export default function InterviewPage() {
 
   const role = "Frontend Developer";
 
-  const interviewQuestions = questions[role];
+  const interviewQuestions = [
+    "Loading interview questions..."
+  ];
 
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState([]);

@@ -20,9 +20,6 @@ const trendData = [
 ];
 
 const pastInterviews = [
-    { id: 1, role: "Frontend Developer", date: "2026-07-01", score: 76 },
-    { id: 2, role: "Backend Developer", date: "2026-06-25", score: 70 },
-    { id: 3, role: "Frontend Developer", date: "2026-06-18", score: 58 },
 ];
 
 export default function DashboardClient({
@@ -67,24 +64,38 @@ export default function DashboardClient({
             </h1>
 
             <div className="mt-12 flex justify-center">
-                <a
-                    href="/interview"
+                <button
+                    onClick={async () => {
+                        const res = await fetch("/api/interview/create", {
+                            method: "POST",
+                        });
+
+                        const data = await res.json();
+
+                        console.log(data);
+
+                        if (data.success) {
+                            window.location.href = `/interview/${data.interviewId}`;
+                        } else {
+                            alert(data.error);
+                        }
+                    }}
                     className="
-            inline-flex items-center gap-3
-            bg-gradient-to-r from-emerald-500 to-green-600
-            text-white
-            px-12 py-5
-            rounded-2xl
-            shadow-xl
-            hover:shadow-emerald-400/40
-            hover:scale-105
-            transition-all duration-300
-            text-2xl font-extrabold tracking-wide
-        "
+    inline-flex items-center gap-3
+    bg-gradient-to-r from-emerald-500 to-green-600
+    text-white
+    px-12 py-5
+    rounded-2xl
+    shadow-xl
+    hover:shadow-emerald-400/40
+    hover:scale-105
+    transition-all duration-300
+    text-2xl font-extrabold tracking-wide
+  "
                     style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
                     🚀 Start Mock Interview
-                </a>
+                </button>
             </div>
 
             <br></br>
@@ -92,7 +103,7 @@ export default function DashboardClient({
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
                 <div className="border rounded-xl p-5">
                     <p className="text-sm text-gray-500">Average Score</p>
-                    <p className="text-3xl font-bold mt-1">68%</p>
+                    <p className="text-3xl font-bold mt-1">no interviews yet</p>
                 </div>
 
                 <div className="border rounded-xl p-5">
@@ -103,57 +114,48 @@ export default function DashboardClient({
                 <div className="border rounded-xl p-5">
                     <p className="text-sm text-gray-500">Weak Areas</p>
                     <p className="text-lg font-semibold mt-1">
-                        System Design, SQL
+                        none yet
                     </p>
                 </div>
 
                 <div className="border rounded-xl p-5">
-                    <p className="text-sm text-gray-500">Readiness</p>
-                    <p className="text-3xl font-bold mt-1 text-blue-600">Good</p>
+                    <p className="text-sm text-gray-500">AI Evaluation</p>
+                    <p className="text-3xl font-bold mt-1 text-blue-600">Pending</p>
                 </div>
-            </div>
-
-            {/* Performance Chart */}
-            <div className="border rounded-xl p-5 mb-10">
-                <h2 className="font-semibold mb-4">Performance Trend</h2>
-
-                <ResponsiveContainer width="100%" height={250}>
-                    <LineChart data={trendData}>
-                        <XAxis dataKey="session" />
-                        <YAxis domain={[0, 100]} />
-                        <Tooltip />
-                        <Line
-                            type="monotone"
-                            dataKey="score"
-                            stroke="#2563eb"
-                            strokeWidth={2}
-                        />
-                    </LineChart>
-                </ResponsiveContainer>
             </div>
             {/* Previous Interviews */}
             <div className="border rounded-xl p-5 mb-10">
                 <h2 className="font-semibold mb-4">Previous Interviews</h2>
 
-                <table className="w-full text-sm">
-                    <thead>
-                        <tr className="text-left text-gray-500 border-b">
-                            <th className="pb-2">Role</th>
-                            <th className="pb-2">Date</th>
-                            <th className="pb-2">Score</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {pastInterviews.map((i) => (
-                            <tr key={i.id} className="border-b last:border-0">
-                                <td className="py-2">{i.role}</td>
-                                <td className="py-2">{i.date}</td>
-                                <td className="py-2">{i.score}%</td>
+                {pastInterviews.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                        <p className="text-lg font-medium mb-2">No interviews completed yet</p>
+                        <p>
+                            Your interview history will appear here after you complete your first
+                            mock interview.
+                        </p>
+                    </div>
+                ) : (
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="text-left text-gray-500 border-b">
+                                <th className="pb-2">Role</th>
+                                <th className="pb-2">Date</th>
+                                <th className="pb-2">Score</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+
+                        <tbody>
+                            {pastInterviews.map((i) => (
+                                <tr key={i.id} className="border-b last:border-0">
+                                    <td className="py-2">{i.role}</td>
+                                    <td className="py-2">{i.date}</td>
+                                    <td className="py-2">{i.score}%</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
 
             {/* Suggestions */}
@@ -161,9 +163,9 @@ export default function DashboardClient({
                 <h2 className="font-semibold mb-2">Improvement Suggestions</h2>
 
                 <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                    <li>Practice explaining trade-offs in system design questions.</li>
-                    <li>Review SQL joins and indexing concepts.</li>
-                    <li>Work on giving more concise, structured answers.</li>
+                    <li>---</li>
+                    <li>---</li>
+                    <li>---</li>
                 </ul>
             </div>
             <div className="border rounded-xl p-6 mb-8 bg-white shadow-sm">
@@ -219,7 +221,7 @@ export default function DashboardClient({
                     </div>
 
                     <button
-                        onClick={() => window.location.href = "/onboarding"}
+                        onClick={() => window.location.href = "/onboarding?edit=true"}
                         className="mt-4 bg-gray-900 text-white px-5 py-2 rounded-lg hover:bg-gray-700"
                     >
                         Update Resume
