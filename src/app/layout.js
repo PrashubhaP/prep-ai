@@ -1,48 +1,37 @@
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  UserButton,
-  Show,
-} from "@clerk/nextjs";
+import { Inter, JetBrains_Mono } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+import "./globals.css";
+import { Header } from "@/components/layout/Header";
+
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata = {
-  title: "PrepAI",
-  description: "AI-Powered Mock Interview Platform",
+  title: "PrepAI — AI-Powered Mock Interviews",
+  description:
+    "Ace your next technical interview with AI-generated questions tailored to your resume. Get instant feedback and track your progress.",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider appearance={{ baseTheme: dark }}>
       <html
         lang="en"
-        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+        className={`${inter.variable} ${jetbrainsMono.variable} h-full`}
       >
         <body className="min-h-full flex flex-col">
-          <header className="flex justify-between items-center px-6 py-4 border-b">
-            <span className="font-bold text-lg">PrepAI</span>
-            <div className="flex items-center gap-4">
-              <Show when="signed-out">
-                <SignInButton />
-                <SignUpButton />
-              </Show>
-              <Show when="signed-in">
-                <UserButton />
-              </Show>
-            </div>
-          </header>
+          <Header />
           <main className="flex-1">{children}</main>
         </body>
       </html>
