@@ -1,6 +1,5 @@
 import { SectionCard } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { pastInterviews } from "../data";
 
 function scoreVariant(score) {
   if (score >= 70) return "success";
@@ -8,7 +7,7 @@ function scoreVariant(score) {
   return "danger";
 }
 
-export function PreviousInterviews() {
+export function PreviousInterviews({ interviews = [] }) {
   return (
     <SectionCard
       title="Previous Interviews"
@@ -19,8 +18,13 @@ export function PreviousInterviews() {
         </svg>
       }
     >
+      {interviews.length === 0 ? (
+        <p className="text-sm text-muted py-8 text-center">
+          No interviews yet. Your completed sessions will appear here.
+        </p>
+      ) : (
       <div className="space-y-3">
-        {pastInterviews.map((interview) => (
+        {interviews.map((interview) => (
           <div
             key={interview.id}
             className="flex items-center justify-between gap-4 p-3.5 rounded-xl bg-canvas-raised border border-glass-border hover:bg-glass-hover hover:border-glass-border-hover transition-all duration-300 cursor-default"
@@ -37,6 +41,7 @@ export function PreviousInterviews() {
           </div>
         ))}
       </div>
+      )}
     </SectionCard>
   );
 }

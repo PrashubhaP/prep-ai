@@ -17,6 +17,7 @@ export function OnboardingForm() {
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   async function handleContinue() {
     if (!file || !role || !experience) {
@@ -24,17 +25,26 @@ export function OnboardingForm() {
       return;
     }
 
-    const data = await uploadResume({
-      fileName: file.name,
-      role,
-      experienceLevel: experience,
-    });
+    setMessage("");
+    setLoading(true);
 
-    if (data.success) {
-      localStorage.setItem("selectedRole", role);
-      router.push("/dashboard");
-    } else {
-      setMessage(data.message || "Upload failed.");
+    try {
+      const data = await uploadResume({
+        file,
+        role,
+        experienceLevel: experience,
+      });
+
+      if (data.success) {
+        localStorage.setItem("selectedRole", role);
+        router.push("/dashboard");
+      } else {
+        setMessage(data.message || "Upload failed.");
+      }
+    } catch (err) {
+      setMessage(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -151,9 +161,20 @@ export function OnboardingForm() {
             className="mb-8"
           />
 
-          <Button onClick={handleContinue} className="w-full">
-            Continue to dashboard
+          <Button
+            onClick={handleContinue}
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? "Analyzing your resume…" : "Continue to dashboard"}
           </Button>
+
+          {loading ? (
+            <p className="text-xs text-muted mt-3 text-center">
+              Reading your resume and generating personalized questions. This
+              can take up to a minute.
+            </p>
+          ) : null}
 
           {message ? (
             <div className="flex items-center gap-2 mt-4 p-3 rounded-xl bg-warning-soft text-warning text-sm">

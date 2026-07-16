@@ -11,7 +11,6 @@ import {
 } from "recharts";
 
 import { SectionCard } from "@/components/ui/Card";
-import { trendData } from "../data";
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -26,7 +25,7 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-export function PerformanceTrend() {
+export function PerformanceTrend({ data = [] }) {
   return (
     <SectionCard
       title="Performance Trend"
@@ -36,8 +35,13 @@ export function PerformanceTrend() {
         </svg>
       }
     >
-      <ResponsiveContainer width="100%" height={250}>
-        <AreaChart data={trendData}>
+      {data.length === 0 ? (
+        <div className="flex items-center justify-center h-[250px] text-sm text-muted">
+          Complete an interview to see your score trend.
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={250}>
+          <AreaChart data={data}>
           <defs>
             <linearGradient id="scoreGradientFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--color-accent-blue)" stopOpacity={0.3} />
@@ -62,15 +66,16 @@ export function PerformanceTrend() {
             tickLine={false}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Area
-            type="monotone"
-            dataKey="score"
-            stroke="url(#scoreStroke)"
-            strokeWidth={2.5}
-            fill="url(#scoreGradientFill)"
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+            <Area
+              type="monotone"
+              dataKey="score"
+              stroke="url(#scoreStroke)"
+              strokeWidth={2.5}
+              fill="url(#scoreGradientFill)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      )}
     </SectionCard>
   );
 }

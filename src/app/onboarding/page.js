@@ -1,7 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
-import { findUserByClerkId } from "@/server/services/user.service";
 import { OnboardingForm } from "@/features/onboarding/OnboardingForm";
 
 export default async function OnboardingPage() {
@@ -11,11 +10,8 @@ export default async function OnboardingPage() {
     redirect("/");
   }
 
-  const user = await findUserByClerkId(userId);
-
-  if (user?.profileCompleted) {
-    redirect("/dashboard");
-  }
-
+  // Reachable both for first-time onboarding (the dashboard funnels new users
+  // here) and for existing users updating their resume, so we don't redirect
+  // completed profiles away.
   return <OnboardingForm />;
 }

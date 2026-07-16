@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { questions } from "@/data/questions";
+import { submitInterview } from "@/lib/api";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 
 const DEFAULT_ROLE = "Frontend Developer";
 
@@ -14,18 +14,66 @@ function countWords(text) {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-export function InterviewSession({ role = DEFAULT_ROLE }) {
+export function InterviewSession({
+  role = DEFAULT_ROLE,
+  experienceLevel = "",
+  questions = [],
+}) {
   const router = useRouter();
-  const interviewQuestions = questions[role] ?? [];
+  const interviewQuestions = questions;
 
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [answer, setAnswer] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const isLast = current === interviewQuestions.length - 1;
   const progress = ((current + 1) / interviewQuestions.length) * 100;
   const questionNumber = String(current + 1).padStart(2, "0");
   const words = countWords(answer);
+
+  if (interviewQuestions.length === 0) {
+    return (
+      <div className="relative max-w-3xl mx-auto py-16 px-6">
+        <div className="orb orb-blue w-[300px] h-[300px] -top-10 -right-32 animate-float" />
+        <div className="relative z-10">
+          <PageHeader
+            eyebrow="Mock interview"
+            title="No questions yet"
+            description="Upload your resume so PrepAI can generate interview questions tailored to your experience."
+            className="mb-8"
+          />
+          <ButtonLink href="/onboarding" variant="signal" size="lg">
+            Upload your resume
+          </ButtonLink>
+        </div>
+      </div>
+    );
+  }
+
+  async function submit(finalAnswers) {
+    setSubmitting(true);
+    setError("");
+    try {
+      const data = await submitInterview({
+        role,
+        experienceLevel,
+        questions: interviewQuestions,
+        answers: finalAnswers,
+      });
+
+      if (data.success) {
+        router.push(`/feedback?id=${data.interviewId}`);
+      } else {
+        setError(data.message || "Could not score the interview.");
+        setSubmitting(false);
+      }
+    } catch (err) {
+      setError(err.message || "Something went wrong. Please try again.");
+      setSubmitting(false);
+    }
+  }
 
   function goToNext() {
     const updated = [...answers];
@@ -34,8 +82,7 @@ export function InterviewSession({ role = DEFAULT_ROLE }) {
     setAnswer("");
 
     if (isLast) {
-      localStorage.setItem("interviewAnswers", JSON.stringify(updated));
-      router.push("/feedback");
+      submit(updated);
     } else {
       setCurrent(current + 1);
     }
@@ -57,7 +104,7 @@ export function InterviewSession({ role = DEFAULT_ROLE }) {
         {/* Progress rail */}
         <div className="h-1.5 w-full rounded-full mb-10 overflow-hidden bg-glass border border-glass-border">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-accent-blue via-accent-violet to-accent-cyan transition-all duration-700 ease-out relative"
+            className="h-full rounded-full bg-linear-to-r from-accent-blue via-accent-violet to-accent-cyan transition-all duration-700 ease-out relative"
             style={{ width: `${progress}%` }}
           >
             {/* Glow effect */}
@@ -67,7 +114,7 @@ export function InterviewSession({ role = DEFAULT_ROLE }) {
 
         <Card className="p-8 relative overflow-hidden">
           {/* Accent line */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-accent-blue/40 via-accent-violet/30 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-accent-blue/40 via-accent-violet/30 to-transparent" />
 
           {/* Question */}
           <div className="flex items-baseline gap-4 mb-8">
@@ -98,10 +145,25 @@ export function InterviewSession({ role = DEFAULT_ROLE }) {
                 <div className="h-1 w-1 rounded-full bg-success animate-pulse" />
               )}
             </div>
-            <Button onClick={goToNext} disabled={!answer.trim()}>
-              {isLast ? "Submit interview" : "Next question →"}
+            <Button onClick={goToNext} disabled={!answer.trim() || submitting}>
+              {submitting
+                ? "Scoring your answers…"
+                : isLast
+                ? "Submit interview"
+                : "Next question →"}
             </Button>
           </div>
+
+          {error ? (
+            <div className="flex items-center gap-2 mt-4 p-3 rounded-xl bg-warning-soft text-warning text-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              {error}
+            </div>
+          ) : null}
         </Card>
       </div>
     </div>

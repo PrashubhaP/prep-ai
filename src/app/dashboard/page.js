@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getOrCreateUser } from "@/server/services/user.service";
 import { getLatestResume } from "@/server/services/resume.service";
+import { getInterviewStats } from "@/server/services/interview.service";
 import { Dashboard } from "@/features/dashboard/Dashboard";
 
 // Mongoose documents can't cross the server/client boundary directly.
@@ -22,7 +23,16 @@ export default async function DashboardPage() {
     redirect("/onboarding");
   }
 
-  const resume = await getLatestResume(userId);
+  const [resume, stats] = await Promise.all([
+    getLatestResume(userId),
+    getInterviewStats(userId),
+  ]);
 
-  return <Dashboard user={serialize(user)} resume={serialize(resume)} />;
+  return (
+    <Dashboard
+      user={serialize(user)}
+      resume={serialize(resume)}
+      stats={serialize(stats)}
+    />
+  );
 }

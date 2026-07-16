@@ -2,7 +2,6 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, SectionCard } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
-import { feedbackResult } from "./data";
 
 function ScoreRing({ score }) {
   const circumference = 2 * Math.PI * 45; // radius = 45
@@ -63,8 +62,27 @@ function FeedbackList({ items, variant, icon }) {
   );
 }
 
-export function FeedbackReport({ result = feedbackResult }) {
-  const { score, strengths, improvements } = result;
+export function FeedbackReport({ result }) {
+  if (!result) {
+    return (
+      <div className="relative max-w-4xl mx-auto py-16 px-6">
+        <div className="orb orb-blue w-[400px] h-[400px] -top-20 -left-40 animate-float" />
+        <div className="relative z-10">
+          <PageHeader
+            eyebrow="Interview feedback"
+            title="No feedback yet"
+            description="Complete a mock interview to see your AI-scored feedback here."
+            className="mb-8"
+          />
+          <ButtonLink href="/interview" variant="signal" size="lg">
+            Start an interview
+          </ButtonLink>
+        </div>
+      </div>
+    );
+  }
+
+  const { score = 0, strengths = [], improvements = [] } = result;
   const isGood = score >= 70;
 
   return (

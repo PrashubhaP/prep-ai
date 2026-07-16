@@ -9,6 +9,8 @@ const ResumeSchema = new mongoose.Schema(
     extractedSkills: [String],
     projects: [String],
     technologies: [String],
+    // AI-generated interview questions derived from the resume content.
+    questions: [String],
   },
   { timestamps: true }
 );

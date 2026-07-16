@@ -1,7 +1,6 @@
 import { SectionCard } from "@/components/ui/Card";
-import { improvementSuggestions } from "../data";
 
-export function Suggestions() {
+export function Suggestions({ suggestions = [] }) {
   return (
     <SectionCard
       title="Improvement Suggestions"
@@ -13,8 +12,13 @@ export function Suggestions() {
         </svg>
       }
     >
+      {suggestions.length === 0 ? (
+        <p className="text-sm text-muted py-8 text-center">
+          Complete an interview to get personalized improvement tips.
+        </p>
+      ) : (
       <div className="space-y-3">
-        {improvementSuggestions.map((suggestion, i) => (
+        {suggestions.map((suggestion, i) => (
           <div
             key={suggestion}
             className="flex items-start gap-4 p-3.5 rounded-xl bg-canvas-raised border border-glass-border"
@@ -28,6 +32,7 @@ export function Suggestions() {
           </div>
         ))}
       </div>
+      )}
     </SectionCard>
   );
 }

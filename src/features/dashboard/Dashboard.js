@@ -1,18 +1,33 @@
 import { StatCard } from "@/components/ui/StatCard";
 import { ButtonLink } from "@/components/ui/Button";
 
-import { pastInterviews } from "./data";
 import { PerformanceTrend } from "./components/PerformanceTrend";
 import { PreviousInterviews } from "./components/PreviousInterviews";
 import { Suggestions } from "./components/Suggestions";
 import { ResumeSummary } from "./components/ResumeSummary";
 
-export function Dashboard({ user, resume }) {
-  const stats = [
-    { label: "Average Score", value: "68%" },
-    { label: "Total Interviews", value: pastInterviews.length },
-    { label: "Weak Areas", value: "System Design, SQL" },
-    { label: "Readiness", value: "Good", accent: true },
+export function Dashboard({ user, resume, stats }) {
+  const {
+    total = 0,
+    averageScore = null,
+    readiness = "—",
+    weakAreas = [],
+    suggestions = [],
+    trend = [],
+    previousInterviews = [],
+  } = stats ?? {};
+
+  const statCards = [
+    {
+      label: "Average Score",
+      value: averageScore === null ? "—" : `${averageScore}%`,
+    },
+    { label: "Total Interviews", value: total },
+    {
+      label: "Weak Areas",
+      value: weakAreas.length > 0 ? weakAreas.join(", ") : "—",
+    },
+    { label: "Readiness", value: readiness, accent: true },
   ];
 
   return (
@@ -41,7 +56,7 @@ export function Dashboard({ user, resume }) {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {stats.map((stat, i) => (
+        {statCards.map((stat, i) => (
           <div
             key={stat.label}
             className={`animate-fade-in-up delay-${(i + 1) * 100}`}
@@ -54,17 +69,17 @@ export function Dashboard({ user, resume }) {
       {/* Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="animate-fade-in-up delay-300">
-          <PerformanceTrend />
+          <PerformanceTrend data={trend} />
         </div>
         <div className="animate-fade-in-up delay-400">
-          <PreviousInterviews />
+          <PreviousInterviews interviews={previousInterviews} />
         </div>
       </div>
 
       {/* Bottom Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="animate-fade-in-up delay-500">
-          <Suggestions />
+          <Suggestions suggestions={suggestions} />
         </div>
         <div className="animate-fade-in-up delay-600">
           <ResumeSummary resume={resume} />
