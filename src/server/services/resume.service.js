@@ -1,7 +1,10 @@
 import connectDB from "@/server/db";
 import Resume from "@/server/models/Resume";
 
-export async function createResume(userId, { fileName, role, experienceLevel }) {
+export async function createResume(
+  userId,
+  { fileName, role, experienceLevel, questions = [] }
+) {
   await connectDB();
 
   return Resume.create({
@@ -9,6 +12,7 @@ export async function createResume(userId, { fileName, role, experienceLevel }) 
     fileName,
     role,
     experienceLevel,
+    questions,
     extractedSkills: [],
     projects: [],
     technologies: [],
