@@ -1,12 +1,11 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
-import { getLatestResume } from "@/server/services/resume.service";
-import { questions as staticQuestions } from "@/data/questions";
+import {
+  getNextQuestions,
+  QUESTION_COUNT,
+} from "@/server/services/question.service";
 import { InterviewSession } from "@/features/interview/InterviewSession";
-
-// Number of questions asked per interview. Caps older resumes that stored more.
-const QUESTION_COUNT = 5;
 
 export default async function InterviewPage() {
   const { userId } = await auth();
@@ -15,23 +14,18 @@ export default async function InterviewPage() {
     redirect("/");
   }
 
-  const resume = await getLatestResume(userId);
-  const role = resume?.role || "Frontend Developer";
-  const experienceLevel = resume?.experienceLevel || "";
-
-  // Prefer the questions generated from the user's resume; fall back to the
-  // generic question bank if none were generated (e.g. older resumes).
-  const source =
-    resume?.questions?.length > 0
-      ? [...resume.questions]
-      : staticQuestions[role] ?? [];
-  const questions = source.slice(0, QUESTION_COUNT);
+  // Draws from the bank generated at upload time, preferring questions this
+  // user hasn't been asked before.
+  const { role, experienceLevel, questions, poolSize, unaskedCount } =
+    await getNextQuestions(userId, QUESTION_COUNT);
 
   return (
     <InterviewSession
       role={role}
       experienceLevel={experienceLevel}
       questions={questions}
+      poolSize={poolSize}
+      unaskedCount={unaskedCount}
     />
   );
 }
