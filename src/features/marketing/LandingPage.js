@@ -18,25 +18,25 @@ const features = [
     ),
   },
   {
-    title: "Instant Feedback",
+    title: "Fresh Questions Every Time",
     description:
-      "Receive detailed scoring and improvement suggestions after every session.",
+      "Each session draws five new questions from a bank of fifty built from your resume.",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-        <polyline points="22 4 12 14.01 9 11.01" />
+        <polyline points="23 4 23 10 17 10" />
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
       </svg>
     ),
   },
   {
-    title: "Track Your Progress",
+    title: "Your Answers, Saved",
     description:
-      "Monitor your performance trends across multiple interview sessions.",
+      "Every question and answer is stored so you can revisit your past sessions anytime.",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10" />
-        <line x1="12" y1="20" x2="12" y2="4" />
-        <line x1="6" y1="20" x2="6" y2="14" />
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+        <polyline points="17 21 17 13 7 13 7 21" />
+        <polyline points="7 3 7 8 15 8" />
       </svg>
     ),
   },
@@ -76,8 +76,7 @@ export function LandingPage() {
         {/* Subtitle */}
         <p className="animate-fade-in-up delay-200 text-lg md:text-xl text-muted max-w-2xl mb-10 leading-relaxed">
           An AI-powered mock interview platform that generates personalized
-          questions from your resume and gives you detailed feedback to improve
-          your performance.
+          questions from your resume and lets you practice answering them.
         </p>
 
         {/* CTA Buttons */}

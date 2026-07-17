@@ -1,18 +1,22 @@
 import mongoose from "mongoose";
 
+const ResponseSchema = new mongoose.Schema(
+  {
+    question: { type: String, required: true },
+    answer: { type: String, default: "" },
+    // Copied from the question pool so a topic means the same thing everywhere.
+    topic: { type: String, default: "General" },
+  },
+  { _id: false }
+);
+
 const InterviewSchema = new mongoose.Schema(
   {
     userId: { type: String, required: true, index: true },
     role: { type: String, default: "" },
     experienceLevel: { type: String, default: "" },
-    // Overall performance score, 0-100.
-    score: { type: Number, default: 0 },
-    strengths: [String],
-    improvements: [String],
-    // Short topic tags the candidate was weak on, e.g. "System Design".
-    weakAreas: [String],
-    questions: [String],
-    answers: [String],
+    // The saved question/answer pairs, one per question asked.
+    responses: [ResponseSchema],
   },
   { timestamps: true }
 );

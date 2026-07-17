@@ -18,6 +18,8 @@ export function InterviewSession({
   role = DEFAULT_ROLE,
   experienceLevel = "",
   questions = [],
+  poolSize = 0,
+  unaskedCount = 0,
 }) {
   const router = useRouter();
   const interviewQuestions = questions;
@@ -32,6 +34,7 @@ export function InterviewSession({
   const progress = ((current + 1) / interviewQuestions.length) * 100;
   const questionNumber = String(current + 1).padStart(2, "0");
   const words = countWords(answer);
+  const question = interviewQuestions[current];
 
   if (interviewQuestions.length === 0) {
     return (
@@ -64,9 +67,9 @@ export function InterviewSession({
       });
 
       if (data.success) {
-        router.push(`/feedback?id=${data.interviewId}`);
+        router.push("/dashboard");
       } else {
-        setError(data.message || "Could not score the interview.");
+        setError(data.message || "Could not save the interview.");
         setSubmitting(false);
       }
     } catch (err) {
@@ -101,6 +104,16 @@ export function InterviewSession({
           className="mb-6"
         />
 
+        {/* Pool context — makes it clear these 5 are drawn from a larger bank. */}
+        {poolSize > interviewQuestions.length ? (
+          <p className="text-xs text-muted font-mono mb-3">
+            Drawn from your {poolSize}-question bank ·{" "}
+            {unaskedCount > 0
+              ? `${unaskedCount} you haven't seen yet`
+              : "you've seen them all — revisiting the oldest first"}
+          </p>
+        ) : null}
+
         {/* Progress rail */}
         <div className="h-1.5 w-full rounded-full mb-10 overflow-hidden bg-glass border border-glass-border">
           <div
@@ -121,9 +134,20 @@ export function InterviewSession({
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent-blue/20 to-accent-violet/20 font-mono text-sm font-bold text-gradient">
               {questionNumber}
             </span>
-            <h2 className="text-xl font-medium leading-snug text-ink">
-              {interviewQuestions[current]}
-            </h2>
+            <div>
+              <h2 className="text-xl font-medium leading-snug text-ink">
+                {question.text}
+              </h2>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-xs font-mono uppercase tracking-wider text-muted">
+                  {question.topic}
+                </span>
+                <span className="h-1 w-1 rounded-full bg-glass-border-hover" />
+                <span className="text-xs font-mono uppercase tracking-wider text-muted">
+                  {question.difficulty}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Answer textarea */}
@@ -147,7 +171,7 @@ export function InterviewSession({
             </div>
             <Button onClick={goToNext} disabled={!answer.trim() || submitting}>
               {submitting
-                ? "Scoring your answers…"
+                ? "Saving your answers…"
                 : isLast
                 ? "Submit interview"
                 : "Next question →"}

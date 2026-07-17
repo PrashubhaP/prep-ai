@@ -166,7 +166,7 @@ export function OnboardingForm() {
             disabled={loading}
             className="w-full"
           >
-            {loading ? "Analyzing your resume…" : "Continue to dashboard"}
+            {loading ? "Generating your questions…" : "Continue to dashboard"}
           </Button>
 
           {loading ? (
