@@ -8,7 +8,6 @@
  */
 
 import { questionKey } from "@/server/ai/mistral";
-import { questions as staticQuestions } from "@/data/questions";
 
 import { getLatestResume } from "./resume.service";
 import { getUserInterviews } from "./interview.service";
@@ -16,31 +15,12 @@ import { getUserInterviews } from "./interview.service";
 /** Questions asked per sitting. */
 export const QUESTION_COUNT = 5;
 
-/**
- * Read a resume's bank as `{text, topic, difficulty}` objects.
- *
- * Resumes uploaded before the pool existed only have a flat `questions` array,
- * and a user with no resume at all falls back to the generic bank — neither
- * carries topics, so those questions land under "General".
- */
-function poolFor(resume, role) {
-  if (resume?.questionPool?.length > 0) {
-    return resume.questionPool.map((q) => ({
-      text: q.text,
-      topic: q.topic || "General",
-      difficulty: q.difficulty || "medium",
-    }));
-  }
-
-  const flat =
-    resume?.questions?.length > 0
-      ? resume.questions
-      : staticQuestions[role] ?? [];
-
-  return flat.map((text) => ({
-    text,
-    topic: "General",
-    difficulty: "medium",
+/** Read a resume's bank as `{text, topic, difficulty}` objects. */
+function poolFor(resume) {
+  return (resume?.questionPool ?? []).map((q) => ({
+    text: q.text,
+    topic: q.topic || "General",
+    difficulty: q.difficulty || "medium",
   }));
 }
 
@@ -56,13 +36,8 @@ function lastAskedIndex(interviews) {
   const lastAsked = new Map();
 
   interviews.forEach((interview, index) => {
-    const asked =
-      interview.responses?.length > 0
-        ? interview.responses.map((r) => r.question)
-        : interview.questions ?? [];
-
-    for (const text of asked) {
-      lastAsked.set(questionKey(text), index);
+    for (const response of interview.responses ?? []) {
+      lastAsked.set(questionKey(response.question), index);
     }
   });
 
@@ -155,6 +130,6 @@ export async function getNextQuestions(userId, limit = QUESTION_COUNT) {
   return {
     role,
     experienceLevel,
-    ...selectQuestions(poolFor(resume, role), interviews, limit),
+    ...selectQuestions(poolFor(resume), interviews, limit),
   };
 }

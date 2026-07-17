@@ -13,11 +13,6 @@ export async function createResume(
     role,
     experienceLevel,
     questionPool,
-    // Mirrored so anything still reading the flat list keeps working.
-    questions: questionPool.map((q) => q.text),
-    extractedSkills: [],
-    projects: [],
-    technologies: [],
   });
 }
 
