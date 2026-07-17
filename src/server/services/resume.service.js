@@ -3,7 +3,7 @@ import Resume from "@/server/models/Resume";
 
 export async function createResume(
   userId,
-  { fileName, role, experienceLevel, questionPool = [] }
+  { fileName, role, experienceLevel, questionPool = [], analysis = null }
 ) {
   await connectDB();
 
@@ -13,6 +13,8 @@ export async function createResume(
     role,
     experienceLevel,
     questionPool,
+    // Best-effort; omitted when the analysis step didn't produce anything.
+    ...(analysis ? { analysis } : {}),
   });
 }
 

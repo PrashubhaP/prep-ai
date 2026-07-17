@@ -12,12 +12,24 @@ const PooledQuestionSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// AI analysis of the resume, shown on the dashboard. Produced once at upload
+// time; absent on resumes uploaded before the analysis existed.
+const AnalysisSchema = new mongoose.Schema(
+  {
+    // 0-100 estimate of how ready the resume is to share with companies.
+    atsScore: { type: Number, default: 0 },
+  },
+  { _id: false }
+);
+
 const ResumeSchema = new mongoose.Schema(
   {
     userId: { type: String, required: true },
     fileName: { type: String, required: true },
     role: { type: String, default: "" },
     experienceLevel: { type: String, default: "" },
+    // AI analysis of the resume, surfaced on the dashboard.
+    analysis: AnalysisSchema,
     // The full bank of generated questions. Each session draws a few of these;
     // the pool is generated once at upload time.
     questionPool: [PooledQuestionSchema],

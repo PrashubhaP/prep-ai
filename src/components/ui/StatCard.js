@@ -1,8 +1,8 @@
 import { Card } from "./Card";
 
-export function StatCard({ label, value, accent = false }) {
+export function StatCard({ label, value, accent = false, className = "" }) {
   return (
-    <Card className="relative overflow-hidden p-5 group">
+    <Card className={`relative overflow-hidden p-5 group ${className}`.trim()}>
       {/* Top accent stripe */}
       <div
         className={`absolute top-0 left-0 right-0 h-0.5 ${
