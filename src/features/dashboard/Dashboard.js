@@ -5,6 +5,7 @@ import { PerformanceTrend } from "./components/PerformanceTrend";
 import { PreviousInterviews } from "./components/PreviousInterviews";
 import { Suggestions } from "./components/Suggestions";
 import { ResumeSummary } from "./components/ResumeSummary";
+import { TopicBreakdown } from "./components/TopicBreakdown";
 
 export function Dashboard({ user, resume, stats }) {
   const {
@@ -12,8 +13,10 @@ export function Dashboard({ user, resume, stats }) {
     averageScore = null,
     readiness = "—",
     weakAreas = [],
+    topics = [],
     suggestions = [],
     trend = [],
+    trendDelta = null,
     previousInterviews = [],
   } = stats ?? {};
 
@@ -24,8 +27,15 @@ export function Dashboard({ user, resume, stats }) {
     },
     { label: "Total Interviews", value: total },
     {
-      label: "Weak Areas",
-      value: weakAreas.length > 0 ? weakAreas.join(", ") : "—",
+      label: "Weakest Area",
+      // Long topic lists overflow the tile, so lead with the weakest and count
+      // the rest.
+      value:
+        weakAreas.length === 0
+          ? "—"
+          : weakAreas.length === 1
+          ? weakAreas[0]
+          : `${weakAreas[0]} +${weakAreas.length - 1}`,
     },
     { label: "Readiness", value: readiness, accent: true },
   ];
@@ -69,10 +79,10 @@ export function Dashboard({ user, resume, stats }) {
       {/* Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="animate-fade-in-up delay-300">
-          <PerformanceTrend data={trend} />
+          <PerformanceTrend data={trend} delta={trendDelta} />
         </div>
         <div className="animate-fade-in-up delay-400">
-          <PreviousInterviews interviews={previousInterviews} />
+          <TopicBreakdown topics={topics} />
         </div>
       </div>
 
@@ -82,8 +92,12 @@ export function Dashboard({ user, resume, stats }) {
           <Suggestions suggestions={suggestions} />
         </div>
         <div className="animate-fade-in-up delay-600">
-          <ResumeSummary resume={resume} />
+          <PreviousInterviews interviews={previousInterviews} />
         </div>
+      </div>
+
+      <div className="animate-fade-in-up delay-600">
+        <ResumeSummary resume={resume} />
       </div>
     </div>
   );

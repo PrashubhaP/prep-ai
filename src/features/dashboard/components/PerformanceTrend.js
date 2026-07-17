@@ -14,9 +14,13 @@ import { SectionCard } from "@/components/ui/Card";
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
+  const date = payload[0].payload?.date;
   return (
     <div className="glass rounded-xl px-4 py-2.5 text-sm border border-glass-border shadow-xl">
-      <p className="text-muted text-xs mb-1">Session {label}</p>
+      <p className="text-muted text-xs mb-1">
+        Session {label}
+        {date ? ` · ${date}` : ""}
+      </p>
       <p className="font-semibold text-ink">
         Score:{" "}
         <span className="text-gradient">{payload[0].value}%</span>
@@ -25,7 +29,41 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-export function PerformanceTrend({ data = [] }) {
+/**
+ * Plain-language read on the trend. `delta` compares the recent sittings with
+ * everything earlier, and stays null until there are enough sessions to say.
+ */
+function TrendSummary({ delta }) {
+  if (delta === null) {
+    return (
+      <p className="text-xs text-muted font-mono mb-3">
+        Complete a few more sessions to see which way you&apos;re trending.
+      </p>
+    );
+  }
+
+  if (delta === 0) {
+    return (
+      <p className="text-xs text-muted font-mono mb-3">
+        Holding steady versus your earlier sessions.
+      </p>
+    );
+  }
+
+  const rising = delta > 0;
+  return (
+    <p
+      className={`text-xs font-mono mb-3 ${
+        rising ? "text-success" : "text-danger"
+      }`}
+    >
+      {rising ? "▲" : "▼"} {Math.abs(delta)} points{" "}
+      {rising ? "up" : "down"} versus your earlier sessions
+    </p>
+  );
+}
+
+export function PerformanceTrend({ data = [], delta = null }) {
   return (
     <SectionCard
       title="Performance Trend"
@@ -40,6 +78,8 @@ export function PerformanceTrend({ data = [] }) {
           Complete an interview to see your score trend.
         </div>
       ) : (
+        <>
+        <TrendSummary delta={delta} />
         <ResponsiveContainer width="100%" height={250}>
           <AreaChart data={data}>
           <defs>
@@ -75,6 +115,7 @@ export function PerformanceTrend({ data = [] }) {
             />
           </AreaChart>
         </ResponsiveContainer>
+        </>
       )}
     </SectionCard>
   );
