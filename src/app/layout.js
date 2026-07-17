@@ -20,7 +20,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata = {
   title: "PrepAI — AI-Powered Mock Interviews",
   description:
-    "Ace your next technical interview with AI-generated questions tailored to your resume. Get instant feedback and track your progress.",
+    "Ace your next technical interview with AI-generated questions tailored to your resume. Practice answering and save your sessions.",
 };
 
 export default function RootLayout({ children }) {
