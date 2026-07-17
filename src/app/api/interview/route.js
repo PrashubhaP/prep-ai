@@ -6,6 +6,20 @@ import { evaluateInterview } from "@/server/ai/mistral";
 // Scoring is an LLM call; give it room.
 export const maxDuration = 60;
 
+/**
+ * Accept both the `{text, topic}` objects the session serves today and the bare
+ * strings older clients sent.
+ */
+function normalizeQuestion(value) {
+  if (typeof value === "string") {
+    return { text: value, topic: "General" };
+  }
+  return {
+    text: String(value?.text ?? ""),
+    topic: value?.topic || "General",
+  };
+}
+
 export async function POST(req) {
   try {
     const { userId } = await auth();
@@ -17,7 +31,6 @@ export async function POST(req) {
       );
     }
 
-    
     const {
       role = "",
       experienceLevel = "",
@@ -25,15 +38,18 @@ export async function POST(req) {
       answers = [],
     } = await req.json();
 
-    if (questions.length === 0) {
+    const asked = questions.map(normalizeQuestion).filter((q) => q.text.trim());
+
+    if (asked.length === 0) {
       return Response.json(
         { success: false, message: "No interview questions to score." },
         { status: 400 }
       );
     }
 
-    const qa = questions.map((question, i) => ({
-      question,
+    const qa = asked.map((question, i) => ({
+      question: question.text,
+      topic: question.topic,
       answer: answers[i] ?? "",
     }));
 
@@ -42,8 +58,9 @@ export async function POST(req) {
     const interview = await createInterview(userId, {
       role,
       experienceLevel,
-      questions,
-      answers,
+      // Flat mirrors, kept alongside the graded `responses` in the assessment.
+      questions: qa.map((item) => item.question),
+      answers: qa.map((item) => item.answer),
       ...assessment,
     });
 
