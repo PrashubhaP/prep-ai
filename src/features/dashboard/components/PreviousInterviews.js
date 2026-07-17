@@ -1,12 +1,6 @@
 import { SectionCard } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 
-function scoreVariant(score) {
-  if (score >= 70) return "success";
-  if (score >= 50) return "warning";
-  return "danger";
-}
-
 export function PreviousInterviews({ interviews = [] }) {
   return (
     <SectionCard
@@ -35,8 +29,9 @@ export function PreviousInterviews({ interviews = [] }) {
               </p>
               <p className="text-xs text-muted mt-0.5">{interview.date}</p>
             </div>
-            <Badge variant={scoreVariant(interview.score)}>
-              {interview.score}%
+            <Badge variant="info">
+              {interview.questionCount}{" "}
+              {interview.questionCount === 1 ? "question" : "questions"}
             </Badge>
           </div>
         ))}

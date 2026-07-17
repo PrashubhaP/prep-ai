@@ -67,9 +67,9 @@ export function InterviewSession({
       });
 
       if (data.success) {
-        router.push(`/feedback?id=${data.interviewId}`);
+        router.push("/dashboard");
       } else {
-        setError(data.message || "Could not score the interview.");
+        setError(data.message || "Could not save the interview.");
         setSubmitting(false);
       }
     } catch (err) {
@@ -171,7 +171,7 @@ export function InterviewSession({
             </div>
             <Button onClick={goToNext} disabled={!answer.trim() || submitting}>
               {submitting
-                ? "Scoring your answers…"
+                ? "Saving your answers…"
                 : isLast
                 ? "Submit interview"
                 : "Next question →"}
