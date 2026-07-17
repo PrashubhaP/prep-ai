@@ -82,10 +82,76 @@ export function questionKey(text) {
     .trim();
 }
 
+const QUESTION_SYSTEM_PROMPT =
+  "You are an expert technical interviewer. You create sharp, personalized " +
+  "interview questions grounded in the candidate's actual resume — their " +
+  "skills, projects, technologies, and experience. Also ask a few fundamental " +
+  "questions from the mentioned techstack in the resume. Respond ONLY with JSON of the form " +
+  '{"questions": [{"text": "...", "topic": "...", "difficulty": "easy|medium|hard"}]}. ' +
+  "`topic` is a concise label such as \"System Design\", \"React\", \"SQL\" or " +
+  "\"Behavioral\". Reuse the exact same topic label for every question that " +
+  "covers that area so sessions can be balanced across topics.";
+
+/**
+ * The pool is generated as several focused batches instead of one big request.
+ * A single 50-question completion has to stream ~all its tokens sequentially
+ * and dominates upload time; these batches run concurrently, so the wall-clock
+ * cost is roughly one small batch. Distinct focuses also keep overlap down and
+ * the bank spread across areas.
+ */
+const GENERATION_BATCHES = [
+  "core computer-science and language fundamentals behind the candidate's tech stack",
+  "the candidate's specific projects and the decisions and trade-offs they made in them",
+  "the specific frameworks, libraries, databases and tools named on the resume",
+  "system design, architecture and scalability appropriate to the target role",
+  "behavioral and situational questions about collaboration, ownership and past challenges",
+];
+
+/** One chat call: a batch of questions focused on a single area. */
+async function generateQuestionBatch({
+  resumeText,
+  role,
+  experienceLevel,
+  count,
+  focus,
+}) {
+  const data = await mistralFetch("/chat/completions", {
+    model: CHAT_MODEL,
+    temperature: 0.7,
+    // A single batch is small, so this comfortably fits without truncating.
+    max_tokens: 2500,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: QUESTION_SYSTEM_PROMPT },
+      {
+        role: "user",
+        content:
+          `Target role: ${role || "Not specified"}\n` +
+          `Experience level: ${experienceLevel || "Not specified"}\n\n` +
+          `Generate ${count} distinct interview questions tailored to the resume ` +
+          `below, focused on ${focus}.\n\n` +
+          `Requirements:\n` +
+          `- Ground every question in the resume; avoid generic questions.\n` +
+          `- Include a spread of easy, medium and hard, calibrated to the ` +
+          `experience level.\n` +
+          `- No two questions may ask the same thing in different words.\n\n` +
+          `--- RESUME ---\n${resumeText}`,
+      },
+    ],
+  });
+
+  const content = data.choices?.[0]?.message?.content ?? "{}";
+  const parsed = JSON.parse(content);
+  return Array.isArray(parsed.questions) ? parsed.questions : [];
+}
+
 /**
  * Generate a bank of interview questions tailored to the candidate's resume and
  * target role. The whole pool is generated once, then sessions draw a handful
  * at a time, so `count` is deliberately much larger than a single sitting.
+ *
+ * The batches are generated in parallel and merged; only the whole set failing
+ * is an error, so a slow or dropped batch still yields a usable pool.
  *
  * @returns {Promise<Array<{text: string, topic: string, difficulty: string}>>}
  *   Up to `count` unique questions. The model may return slightly fewer; that is
@@ -97,68 +163,63 @@ export async function generateInterviewQuestions({
   experienceLevel,
   count = 50,
 }) {
-  const data = await mistralFetch("/chat/completions", {
-    model: CHAT_MODEL,
-    temperature: 0.7,
-    // A 50-question bank runs well past the default output ceiling; without
-    // this the JSON comes back truncated and unparseable.
-    max_tokens: 8000,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are an expert technical interviewer. You create sharp, personalized " +
-          "interview questions grounded in the candidate's actual resume — their " +
-          "skills, projects, technologies, and experience. Also ask a few fundamental " +
-          "questions from the mentioned techstack in the resume. Respond ONLY with JSON of the form " +
-          '{"questions": [{"text": "...", "topic": "...", "difficulty": "easy|medium|hard"}]}. ' +
-          "`topic` is a concise label such as \"System Design\", \"React\", \"SQL\" or " +
-          "\"Behavioral\". Reuse the exact same topic label for every question that " +
-          "covers that area so sessions can be balanced across topics.",
-      },
-      {
-        role: "user",
-        content:
-          `Target role: ${role || "Not specified"}\n` +
-          `Experience level: ${experienceLevel || "Not specified"}\n\n` +
-          `Generate ${count} distinct interview questions tailored to the resume below.\n\n` +
-          `Requirements:\n` +
-          `- Spread them across roughly 6-10 topics, so no single topic dominates.\n` +
-          `- Mix technical depth with questions about the candidate's specific ` +
-          `projects and experience, and include some behavioral questions.\n` +
-          `- Include a spread of easy, medium and hard, calibrated to the ` +
-          `experience level.\n` +
-          `- No two questions may ask the same thing in different words.\n\n` +
-          `--- RESUME ---\n${resumeText}`,
-      },
-    ],
-  });
+  // A little padding per batch absorbs the duplicates that dedup will drop.
+  const perBatch = Math.ceil(count / GENERATION_BATCHES.length) + 2;
 
-  const content = data.choices?.[0]?.message?.content ?? "{}";
-  const parsed = JSON.parse(content);
-  const raw = Array.isArray(parsed.questions) ? parsed.questions : [];
+  const settled = await Promise.allSettled(
+    GENERATION_BATCHES.map((focus) =>
+      generateQuestionBatch({ resumeText, role, experienceLevel, count: perBatch, focus })
+    )
+  );
 
-  // The model occasionally repeats itself across a bank this large, and a
-  // duplicate would burn a slot in the rotation without asking anything new.
+  const batches = settled
+    .filter((r) => r.status === "fulfilled")
+    .map((r) => r.value);
+
+  if (batches.length === 0) {
+    // Every batch failed — surface a real error rather than an empty pool.
+    const firstError = settled.find((r) => r.status === "rejected");
+    throw firstError?.reason ?? new Error("Mistral returned no questions.");
+  }
+
+  // Round-robin across batches so capping at `count` never drops a whole focus
+  // area — each contributes questions evenly. Duplicates across batches (the
+  // model occasionally repeats itself) are collapsed by normalized text.
   const seen = new Set();
   const cleaned = [];
+  const cursors = batches.map(() => 0);
 
-  for (const item of raw) {
-    const text = typeof item === "string" ? item : item?.text;
-    if (typeof text !== "string" || !text.trim()) continue;
+  let addedThisPass = true;
+  while (addedThisPass && cleaned.length < count) {
+    addedThisPass = false;
 
-    const key = questionKey(text);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
+    for (let b = 0; b < batches.length && cleaned.length < count; b++) {
+      const batch = batches[b];
+      let i = cursors[b];
 
-    cleaned.push({
-      text: text.trim(),
-      topic: String(item?.topic ?? "").trim() || "General",
-      difficulty: normalizeDifficulty(item?.difficulty),
-    });
+      // Take this batch's next question that isn't blank or a duplicate.
+      while (i < batch.length) {
+        const item = batch[i];
+        i++;
 
-    if (cleaned.length === count) break;
+        const text = typeof item === "string" ? item : item?.text;
+        if (typeof text !== "string" || !text.trim()) continue;
+
+        const key = questionKey(text);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+
+        cleaned.push({
+          text: text.trim(),
+          topic: String(item?.topic ?? "").trim() || "General",
+          difficulty: normalizeDifficulty(item?.difficulty),
+        });
+        addedThisPass = true;
+        break;
+      }
+
+      cursors[b] = i;
+    }
   }
 
   if (cleaned.length === 0) {
