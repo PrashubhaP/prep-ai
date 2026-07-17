@@ -16,8 +16,18 @@ const PooledQuestionSchema = new mongoose.Schema(
 // time; absent on resumes uploaded before the analysis existed.
 const AnalysisSchema = new mongoose.Schema(
   {
+    // One- or two-sentence overview of the candidate.
+    summary: { type: String, default: "" },
+    // Key skills, technologies and standout highlights pulled from the resume.
+    skills: { type: [String], default: [] },
+    technologies: { type: [String], default: [] },
+    highlights: { type: [String], default: [] },
+    // Notable projects named on the resume.
+    projects: { type: [String], default: [] },
     // 0-100 estimate of how ready the resume is to share with companies.
     atsScore: { type: Number, default: 0 },
+    // Actionable suggestions for improving ATS readiness.
+    atsTips: { type: [String], default: [] },
   },
   { _id: false }
 );

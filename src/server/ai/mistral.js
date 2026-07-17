@@ -81,6 +81,15 @@ function clampScore(value) {
   return Math.max(0, Math.min(100, n));
 }
 
+/** Coerce a model value into a clean array of non-empty trimmed strings. */
+function toStringList(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((v) => (typeof v === "string" ? v : v?.text ?? v?.name ?? ""))
+    .map((s) => String(s).trim())
+    .filter(Boolean);
+}
+
 /** Questions are compared by normalized text so near-duplicates collapse. */
 export function questionKey(text) {
   return String(text ?? "")
@@ -237,40 +246,65 @@ export async function generateInterviewQuestions({
 }
 
 /**
- * Score how ready a resume is to share with companies (ATS readiness), 0-100.
+ * Analyze a resume: extract a structured overview of the candidate and rate how
+ * ready the resume is to share with companies (ATS readiness), 0-100.
  *
  * Generated at upload time alongside the question pool. Best-effort — the caller
- * treats a failure as "no score" rather than failing the whole upload.
+ * treats a failure as "no analysis" rather than failing the whole upload.
  *
- * @returns {Promise<{atsScore: number}>}
+ * @returns {Promise<{
+ *   summary: string,
+ *   skills: string[],
+ *   technologies: string[],
+ *   highlights: string[],
+ *   projects: string[],
+ *   atsScore: number,
+ *   atsTips: string[],
+ * }>}
  */
 export async function analyzeResume({ resumeText, role, experienceLevel }) {
   const data = await mistralFetch("/chat/completions", {
     model: CHAT_MODEL,
     temperature: 0.2,
-    max_tokens: 200,
+    max_tokens: 900,
     response_format: { type: "json_object" },
     messages: [
       {
         role: "system",
         content:
-          "You are a technical recruiter rating how ready a resume is to share with " +
-          "companies for a target role. Respond ONLY with JSON of the form " +
-          '{"atsScore": <integer 0-100>}. Judge keyword relevance to the role, ' +
-          "quantified impact, clarity, completeness and formatting. Be honest and " +
-          "calibrated, not generous.",
+          "You are a technical recruiter analyzing a candidate's resume for a " +
+          "target role. Respond ONLY with JSON of the form " +
+          '{"summary": "<1-2 sentence overview of the candidate>", ' +
+          '"skills": ["..."], "technologies": ["..."], ' +
+          '"highlights": ["<notable achievements or strengths>"], ' +
+          '"projects": ["<project names or short descriptions>"], ' +
+          '"atsScore": <integer 0-100>, ' +
+          '"atsTips": ["<actionable suggestion to improve ATS readiness>"]}. ' +
+          "Pull skills, technologies, highlights and projects straight from the " +
+          "resume; keep each list item short. For atsScore, judge keyword " +
+          "relevance to the role, quantified impact, clarity, completeness and " +
+          "formatting — be honest and calibrated, not generous. atsTips should be " +
+          "the most impactful concrete improvements.",
       },
       {
         role: "user",
         content:
           `Target role: ${role || "Not specified"}\n` +
           `Experience level: ${experienceLevel || "Not specified"}\n\n` +
-          `Rate the resume below.\n\n--- RESUME ---\n${resumeText}`,
+          `Analyze the resume below.\n\n--- RESUME ---\n${resumeText}`,
       },
     ],
   });
 
   const content = data.choices?.[0]?.message?.content ?? "{}";
   const parsed = JSON.parse(content);
-  return { atsScore: clampScore(parsed.atsScore) };
+  return {
+    summary: String(parsed.summary ?? "").trim(),
+    skills: toStringList(parsed.skills),
+    technologies: toStringList(parsed.technologies),
+    highlights: toStringList(parsed.highlights),
+    projects: toStringList(parsed.projects),
+    atsScore: clampScore(parsed.atsScore),
+    atsTips: toStringList(parsed.atsTips),
+  };
 }
