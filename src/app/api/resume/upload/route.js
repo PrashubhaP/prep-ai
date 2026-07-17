@@ -7,8 +7,12 @@ import {
   generateInterviewQuestions,
 } from "@/server/ai/mistral";
 
-// OCR + question generation can take a while; allow a longer execution window.
-export const maxDuration = 60;
+// Size of the question bank generated per resume. Each session draws
+// QUESTION_COUNT of these, so one upload covers many sittings.
+const POOL_SIZE = 50;
+
+// OCR + generating a 50-question bank can take a while; allow a longer window.
+export const maxDuration = 300;
 
 export async function POST(req) {
   try {
@@ -43,19 +47,20 @@ export async function POST(req) {
       );
     }
 
-    // 2. Generate tailored interview questions from that text.
-    const questions = await generateInterviewQuestions({
+    // 2. Generate the full question bank from that text, in one call.
+    const questionPool = await generateInterviewQuestions({
       resumeText,
       role,
       experienceLevel,
+      count: POOL_SIZE,
     });
 
-    // 3. Persist the resume together with its questions.
+    // 3. Persist the resume together with its question bank.
     const resume = await createResume(userId, {
       fileName,
       role,
       experienceLevel,
-      questions,
+      questionPool,
     });
 
     await markProfileCompleted(userId);

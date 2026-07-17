@@ -3,7 +3,7 @@ import Resume from "@/server/models/Resume";
 
 export async function createResume(
   userId,
-  { fileName, role, experienceLevel, questions = [] }
+  { fileName, role, experienceLevel, questionPool = [] }
 ) {
   await connectDB();
 
@@ -12,7 +12,9 @@ export async function createResume(
     fileName,
     role,
     experienceLevel,
-    questions,
+    questionPool,
+    // Mirrored so anything still reading the flat list keeps working.
+    questions: questionPool.map((q) => q.text),
     extractedSkills: [],
     projects: [],
     technologies: [],
