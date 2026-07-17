@@ -40,10 +40,10 @@ export async function uploadResume({ file, role, experienceLevel }) {
 }
 
 /**
- * Submit a completed interview for AI scoring. Returns { success, interviewId }.
+ * Save a completed interview. Returns { success, interviewId }.
  *
  * `questions` are the `{text, topic, difficulty}` objects the session was served
- * — the topic travels with them so grading can attribute scores to it.
+ * — the topic travels with them so it's stored alongside each answer.
  */
 export async function submitInterview({ role, experienceLevel, questions, answers }) {
   const res = await fetch("/api/interview", {

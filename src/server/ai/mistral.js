@@ -3,8 +3,7 @@
  *
  * Two capabilities are used:
  *   1. OCR  (`/v1/ocr`)                  — read text out of an uploaded resume PDF.
- *   2. Chat (`/v1/chat/completions`)     — turn that text into tailored questions,
- *                                          and grade the answers that come back.
+ *   2. Chat (`/v1/chat/completions`)     — turn that text into tailored questions.
  *
  * Implemented with plain `fetch` so no extra SDK dependency is required. All
  * calls are server-only; the API key never leaves the backend.
@@ -12,7 +11,7 @@
 
 const API_BASE = "https://api.mistral.ai/v1";
 const OCR_MODEL = "mistral-ocr-latest";
-const CHAT_MODEL = "mistral-large-latest";
+const CHAT_MODEL = "mistral-medium-latest";
 
 // Keep the prompt bounded so a very long resume can't blow up the request.
 const MAX_RESUME_CHARS = 12000;
@@ -111,13 +110,12 @@ export async function generateInterviewQuestions({
         content:
           "You are an expert technical interviewer. You create sharp, personalized " +
           "interview questions grounded in the candidate's actual resume — their " +
-          "skills, projects, technologies, and experience. Avoid generic questions " +
-          "that ignore the resume. Respond ONLY with JSON of the form " +
+          "skills, projects, technologies, and experience. Also ask a few fundamental " +
+          "questions from the mentioned techstack in the resume. Respond ONLY with JSON of the form " +
           '{"questions": [{"text": "...", "topic": "...", "difficulty": "easy|medium|hard"}]}. ' +
           "`topic` is a concise label such as \"System Design\", \"React\", \"SQL\" or " +
           "\"Behavioral\". Reuse the exact same topic label for every question that " +
-          "covers that area — the labels are aggregated across sessions to track " +
-          "progress, so inconsistent spellings corrupt the analysis.",
+          "covers that area so sessions can be balanced across topics.",
       },
       {
         role: "user",
@@ -168,125 +166,4 @@ export async function generateInterviewQuestions({
   }
 
   return cleaned;
-}
-
-// Keep each answer bounded so a long-winded candidate can't blow up the prompt.
-const MAX_ANSWER_CHARS = 1500;
-
-function clampScore(value) {
-  const n = Math.round(Number(value));
-  if (Number.isNaN(n)) return 0;
-  return Math.max(0, Math.min(100, n));
-}
-
-function toStringList(value) {
-  return Array.isArray(value)
-    ? value.filter((v) => typeof v === "string" && v.trim()).map((v) => v.trim())
-    : [];
-}
-
-// An answer scoring below this is treated as a weakness in that topic.
-const WEAK_SCORE = 60;
-
-/**
- * Evaluate a completed interview, grading every answer individually as well as
- * the sitting as a whole.
- *
- * Topics are carried through from the question pool rather than asked of the
- * grader: the dashboard aggregates scores by topic across sessions, so the
- * labels have to come from one stable source.
- *
- * @param {object} params
- * @param {string} params.role
- * @param {string} params.experienceLevel
- * @param {Array<{question: string, answer: string, topic?: string}>} params.qa
- * @returns {Promise<{score:number, strengths:string[], improvements:string[],
- *   weakAreas:string[], responses:Array<{question:string, answer:string,
- *   topic:string, score:number, feedback:string}>}>}
- */
-export async function evaluateInterview({ role, experienceLevel, qa }) {
-  const transcript = qa
-    .map(
-      (item, i) =>
-        `Q${i + 1} [${item.topic || "General"}]: ${item.question}\nA${i + 1}: ${
-          (item.answer || "").slice(0, MAX_ANSWER_CHARS) || "(no answer)"
-        }`
-    )
-    .join("\n\n");
-
-  const data = await mistralFetch("/chat/completions", {
-    model: CHAT_MODEL,
-    temperature: 0.2,
-    max_tokens: 4000,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are a senior technical interviewer grading a mock interview. " +
-          "Assess the answers for correctness, depth, and communication, " +
-          "calibrated to the candidate's target role and experience level. Be " +
-          "fair but rigorous; empty or vague answers score low. Respond ONLY " +
-          "with JSON of the form " +
-          '{"score": <0-100 integer>, "strengths": ["..."], ' +
-          '"improvements": ["..."], "responses": [{"index": <1-based question ' +
-          'number>, "score": <0-100 integer>, "feedback": "one or two sentences ' +
-          'on this specific answer"}]}. ' +
-          "Include exactly one `responses` entry per question asked. `score` is " +
-          "the overall assessment and need not be the mean of the per-answer " +
-          "scores. `improvements` are specific, actionable next steps.",
-      },
-      {
-        role: "user",
-        content:
-          `Target role: ${role || "Not specified"}\n` +
-          `Experience level: ${experienceLevel || "Not specified"}\n\n` +
-          `Grade this interview transcript. It has ${qa.length} question(s), so ` +
-          `return exactly ${qa.length} "responses" entries.\n\n${transcript}`,
-      },
-    ],
-  });
-
-  const content = data.choices?.[0]?.message?.content ?? "{}";
-  const parsed = JSON.parse(content);
-
-  // Index the graded answers so they can be matched back to the questions we
-  // actually asked. Anything the model skipped falls back to a zero score
-  // rather than silently shifting later answers onto the wrong question.
-  const graded = new Map();
-  if (Array.isArray(parsed.responses)) {
-    for (const item of parsed.responses) {
-      const index = Number(item?.index);
-      if (Number.isInteger(index)) graded.set(index, item);
-    }
-  }
-
-  const responses = qa.map((item, i) => {
-    const match = graded.get(i + 1);
-    return {
-      question: item.question,
-      answer: item.answer ?? "",
-      topic: item.topic || "General",
-      score: clampScore(match?.score),
-      feedback:
-        typeof match?.feedback === "string" ? match.feedback.trim() : "",
-    };
-  });
-
-  // Derived rather than model-reported: a weak area is simply a topic whose
-  // answers scored poorly, which keeps the tags consistent with the numbers
-  // shown next to them.
-  const weakAreas = [
-    ...new Set(
-      responses.filter((r) => r.score < WEAK_SCORE).map((r) => r.topic)
-    ),
-  ];
-
-  return {
-    score: clampScore(parsed.score),
-    strengths: toStringList(parsed.strengths),
-    improvements: toStringList(parsed.improvements),
-    weakAreas,
-    responses,
-  };
 }

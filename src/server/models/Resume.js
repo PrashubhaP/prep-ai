@@ -18,12 +18,6 @@ const ResumeSchema = new mongoose.Schema(
     fileName: { type: String, required: true },
     role: { type: String, default: "" },
     experienceLevel: { type: String, default: "" },
-    extractedSkills: [String],
-    projects: [String],
-    technologies: [String],
-    // Plain-text mirror of `questionPool`, kept so resumes written before the
-    // pool existed still read back correctly.
-    questions: [String],
     // The full bank of generated questions. Each session draws a few of these;
     // the pool is generated once at upload time.
     questionPool: [PooledQuestionSchema],
