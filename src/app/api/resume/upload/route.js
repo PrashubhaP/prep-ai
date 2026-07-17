@@ -5,6 +5,7 @@ import { markProfileCompleted } from "@/server/services/user.service";
 import {
   extractResumeText,
   generateInterviewQuestions,
+  analyzeResume,
 } from "@/server/ai/mistral";
 
 // Size of the question bank generated per resume. Each session draws
@@ -47,20 +48,26 @@ export async function POST(req) {
       );
     }
 
-    // 2. Generate the full question bank from that text, in one call.
-    const questionPool = await generateInterviewQuestions({
-      resumeText,
-      role,
-      experienceLevel,
-      count: POOL_SIZE,
-    });
+    // 2. Generate the question bank and analyze the resume — concurrently, so
+    //    the analysis adds little to the overall upload time. The analysis is
+    //    best-effort: if it fails, we still save the resume and its questions.
+    const [questionPool, analysis] = await Promise.all([
+      generateInterviewQuestions({
+        resumeText,
+        role,
+        experienceLevel,
+        count: POOL_SIZE,
+      }),
+      analyzeResume({ resumeText, role, experienceLevel }).catch(() => null),
+    ]);
 
-    // 3. Persist the resume together with its question bank.
+    // 3. Persist the resume together with its analysis and question bank.
     const resume = await createResume(userId, {
       fileName,
       role,
       experienceLevel,
       questionPool,
+      analysis,
     });
 
     await markProfileCompleted(userId);

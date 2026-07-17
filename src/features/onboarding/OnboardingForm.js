@@ -166,13 +166,13 @@ export function OnboardingForm() {
             disabled={loading}
             className="w-full"
           >
-            {loading ? "Generating your questions…" : "Continue to dashboard"}
+            {loading ? "Analyzing your resume…" : "Continue to dashboard"}
           </Button>
 
           {loading ? (
             <p className="text-xs text-muted mt-3 text-center">
-              Reading your resume and generating personalized questions. This
-              can take up to a minute.
+              Reading your resume, analyzing it and generating personalized
+              questions. This can take up to a minute.
             </p>
           ) : null}
 

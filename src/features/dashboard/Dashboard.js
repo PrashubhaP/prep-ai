@@ -2,6 +2,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { ButtonLink } from "@/components/ui/Button";
 
 import { PreviousInterviews } from "./components/PreviousInterviews";
+import { ResumeAnalysis } from "./components/ResumeAnalysis";
 import { ResumeSummary } from "./components/ResumeSummary";
 
 export function Dashboard({ user, resume, stats }) {
@@ -31,10 +32,17 @@ export function Dashboard({ user, resume, stats }) {
         </ButtonLink>
       </div>
 
-      {/* Stat Card */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* Stat card + Resume Analysis, side by side and matched in height */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         <div className="animate-fade-in-up delay-100">
-          <StatCard label="Total Interviews" value={total} />
+          <StatCard
+            label="Total Interviews"
+            value={total}
+            className="h-full flex flex-col justify-center"
+          />
+        </div>
+        <div className="lg:col-span-3 animate-fade-in-up delay-200">
+          <ResumeAnalysis analysis={resume?.analysis} />
         </div>
       </div>
 

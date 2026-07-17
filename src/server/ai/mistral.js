@@ -74,6 +74,13 @@ function normalizeDifficulty(value) {
   return DIFFICULTIES.includes(d) ? d : "medium";
 }
 
+/** Coerce a model value into an integer score in the 0-100 range. */
+function clampScore(value) {
+  const n = Math.round(Number(value));
+  if (Number.isNaN(n)) return 0;
+  return Math.max(0, Math.min(100, n));
+}
+
 /** Questions are compared by normalized text so near-duplicates collapse. */
 export function questionKey(text) {
   return String(text ?? "")
@@ -227,4 +234,43 @@ export async function generateInterviewQuestions({
   }
 
   return cleaned;
+}
+
+/**
+ * Score how ready a resume is to share with companies (ATS readiness), 0-100.
+ *
+ * Generated at upload time alongside the question pool. Best-effort — the caller
+ * treats a failure as "no score" rather than failing the whole upload.
+ *
+ * @returns {Promise<{atsScore: number}>}
+ */
+export async function analyzeResume({ resumeText, role, experienceLevel }) {
+  const data = await mistralFetch("/chat/completions", {
+    model: CHAT_MODEL,
+    temperature: 0.2,
+    max_tokens: 200,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are a technical recruiter rating how ready a resume is to share with " +
+          "companies for a target role. Respond ONLY with JSON of the form " +
+          '{"atsScore": <integer 0-100>}. Judge keyword relevance to the role, ' +
+          "quantified impact, clarity, completeness and formatting. Be honest and " +
+          "calibrated, not generous.",
+      },
+      {
+        role: "user",
+        content:
+          `Target role: ${role || "Not specified"}\n` +
+          `Experience level: ${experienceLevel || "Not specified"}\n\n` +
+          `Rate the resume below.\n\n--- RESUME ---\n${resumeText}`,
+      },
+    ],
+  });
+
+  const content = data.choices?.[0]?.message?.content ?? "{}";
+  const parsed = JSON.parse(content);
+  return { atsScore: clampScore(parsed.atsScore) };
 }
