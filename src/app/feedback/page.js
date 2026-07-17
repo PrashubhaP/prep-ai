@@ -30,6 +30,8 @@ export default async function FeedbackPage({ searchParams }) {
         score: interview.score,
         strengths: interview.strengths,
         improvements: interview.improvements,
+        // Absent on interviews recorded before per-question grading.
+        responses: interview.responses ?? [],
       }
     : null;
 

@@ -36,6 +36,61 @@ function ScoreRing({ score }) {
   );
 }
 
+function scoreTone(score) {
+  if (score >= 75) return "text-success";
+  if (score >= 60) return "text-warning";
+  return "text-danger";
+}
+
+/** Per-answer grades, shown alongside what the candidate actually wrote. */
+function ResponseBreakdown({ responses }) {
+  return (
+    <div className="space-y-4">
+      {responses.map((response, i) => (
+        <div
+          key={`${response.question}-${i}`}
+          className="p-4 rounded-xl bg-canvas-raised border border-glass-border"
+        >
+          <div className="flex items-baseline justify-between gap-4 mb-2">
+            <div className="flex items-baseline gap-3 min-w-0">
+              <span className="font-mono text-xs text-muted shrink-0">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <p className="text-sm text-ink leading-relaxed">
+                {response.question}
+              </p>
+            </div>
+            <span
+              className={`font-mono text-sm font-bold shrink-0 ${scoreTone(
+                response.score
+              )}`}
+            >
+              {response.score}%
+            </span>
+          </div>
+
+          <p className="text-xs font-mono uppercase tracking-wider text-muted ml-7 mb-2">
+            {response.topic}
+          </p>
+
+          {response.answer ? (
+            <p className="text-sm text-muted leading-relaxed ml-7 mb-2 line-clamp-3">
+              <span className="text-ink-soft">Your answer: </span>
+              {response.answer}
+            </p>
+          ) : null}
+
+          {response.feedback ? (
+            <p className="text-sm text-ink-soft leading-relaxed ml-7 pt-2 border-t border-glass-border">
+              {response.feedback}
+            </p>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function FeedbackList({ items, variant, icon }) {
   return (
     <ul className="space-y-3">
@@ -82,7 +137,7 @@ export function FeedbackReport({ result }) {
     );
   }
 
-  const { score = 0, strengths = [], improvements = [] } = result;
+  const { score = 0, strengths = [], improvements = [], responses = [] } = result;
   const isGood = score >= 70;
 
   return (
@@ -163,6 +218,23 @@ export function FeedbackReport({ result }) {
             />
           </SectionCard>
         </div>
+
+        {/* Per-question grades */}
+        {responses.length > 0 ? (
+          <div className="mb-8">
+            <SectionCard
+              title="Question by Question"
+              icon={
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 11l3 3L22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+              }
+            >
+              <ResponseBreakdown responses={responses} />
+            </SectionCard>
+          </div>
+        ) : null}
 
         {/* Actions */}
         <div className="flex flex-wrap gap-4 justify-center">
